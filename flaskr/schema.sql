@@ -29,5 +29,7 @@ create table quiz (
   questions text not null,
   winner int,
   user_1_right_answers int,
+  user_1_indexes text,
   user_2_right_answers int,
+  user_2_indexes text
 );

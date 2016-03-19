@@ -124,7 +124,7 @@ def get_questions():
 def generate_quiz():
     content_json = request.get_json()
 
-    cur = g.db.execute('select title, correct_choice, time_limit, choicesm id from question order by random() desc limit 9')
+    cur = g.db.execute('select title, correct_choice, time_limit, choices, id from question order by random() desc limit 9')
     entries = [dict(title=str(row[0]), correct=str(row[1]), time_limit=str(row[2]), choices=str(row[3]), id=str(row[4])) for row in cur.fetchall()]
 
     g.db.execute('insert into quiz (users, questions) values (?, ?)',
@@ -158,19 +158,27 @@ def answer_question(quizid):
     content_json = request.get_json()
     user_id = content_json["user_id"]
     question_correct = content_json["question_correct"]
+    question_index = content_json["question_index"]
 
-    cur = g.db.execute('select users, user_1_right_answers, user_2_right_answers from quiz where id=%s' % quizid)
-    entries_id = [{"user":row[0],"user_1_right_answers":row[1],"user_2_right_answers":row[2]} for row in cur.fetchall()]
+    cur = g.db.execute('select users, user_1_right_answers, user_2_right_answers,user_1_indexes,user_2_indexes from quiz where id=%s' % quizid)
+    entries_id = [{"user":row[0],"user_1_right_answers":row[1],"user_2_right_answers":row[2], "user_1_indexes":row[3], "user_2_indexes":row[4]} for row in cur.fetchall()]
     splitted = entries_id[0]["user"].split(",")
 
     if user_id == splitted[0]:
         field = "user_1_right_answers"
+        field_index = "user_1_indexes"
+        if question_correct:
+            entries_id[0]["user_1_indexes"] += ", %s" % question_index
     else:
         field = "user_2_right_answers"
+        field_index = "user_2_indexes"
+        if question_correct:
+            entries_id[0]["user_2_indexes"] += ", %s" % question_index
 
-    g.db.execute('update quiz set %s = ? where id = ?' % field,
-                 [int(entries_id[0][field]) + 1, int(quizid)])
+    g.db.execute('update quiz set %s = ?, %s="?" where id = ?' % (field,field_index),
+                 [int(entries_id[0][field]) + 1*int(question_correct), entries_id[0][field_index], int(quizid)])
     g.db.commit()
+
 
 @app.route("/end_quiz/<quizid>", methods=["POST"])
 def end_quiz(quizid):
