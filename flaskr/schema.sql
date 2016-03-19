@@ -27,5 +27,7 @@ create table quiz (
   id integer primary key autoincrement,
   users text not null,
   questions text not null,
-  winner int
+  winner int,
+  user_1_right_answers int,
+  user_2_right_answers int,
 );

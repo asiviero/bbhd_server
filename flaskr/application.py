@@ -124,8 +124,8 @@ def get_questions():
 def generate_quiz():
     content_json = request.get_json()
 
-    cur = g.db.execute('select title, correct_choice, time_limit, choices from question order by random() desc limit 9')
-    entries = [dict(title=str(row[0]), correct=str(row[1]), time_limit=str(row[2]), choices=str(row[3])) for row in cur.fetchall()]
+    cur = g.db.execute('select title, correct_choice, time_limit, choicesm id from question order by random() desc limit 9')
+    entries = [dict(title=str(row[0]), correct=str(row[1]), time_limit=str(row[2]), choices=str(row[3]), id=str(row[4])) for row in cur.fetchall()]
 
     g.db.execute('insert into quiz (users, questions) values (?, ?)',
                  [content_json["users"], str(entries)])
@@ -153,7 +153,42 @@ def set_winner(quizid):
     r.mimetype = 'application/json'
     return r
 
+@app.route("/answer_question/<quizid>", methods=["POST"])
+def answer_question(quizid):
+    content_json = request.get_json()
+    user_id = content_json["user_id"]
+    question_correct = content_json["question_correct"]
 
+    cur = g.db.execute('select users, user_1_right_answers, user_2_right_answers from quiz where id=%s' % quizid)
+    entries_id = [{"user":row[0],"user_1_right_answers":row[1],"user_2_right_answers":row[2]} for row in cur.fetchall()]
+    splitted = entries_id[0]["user"].split(",")
+
+    if user_id == splitted[0]:
+        field = "user_1_right_answers"
+    else:
+        field = "user_2_right_answers"
+
+    g.db.execute('update quiz set %s = ? where id = ?' % field,
+                 [int(entries_id[0][field]) + 1, int(quizid)])
+    g.db.commit()
+
+@app.route("/end_quiz/<quizid>", methods=["POST"])
+def end_quiz(quizid):
+
+    cur = g.db.execute('select id, user_1_right_answers, user_2_right_answers, users from quiz where id=%s' % quizid)
+    entries_id = [{"users":row[0],"user_1_right_answers":row[1],"user_2_right_answers":row[2],"user":row[3]} for row in cur.fetchall()]
+
+    splitted = entries_id[0]["user"].split(",")
+
+    if entries_id[0]["user_1_right_answers"] > entries_id[0]["user_2_right_answers"]:
+        g.db.execute('update quiz set winner = ? where id = ?',
+                     [splitted[0], int(quizid)])
+        g.db.commit()
+    else:
+        g.db.execute('update quiz set winner = ? where id = ?',
+                     [splitted[1], int(quizid)])
+        g.db.commit()
+    # think about this later
 
 
 
