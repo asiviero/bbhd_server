@@ -39,6 +39,25 @@ def hello_world():
     entries = [dict(title=row[0], correct=row[1], choices=row[3]) for row in cur.fetchall()]
     return str(entries)
 
+@app.route("/user/<userid>", methods=["GET"])
+def get_user(userid):
+    cur = g.db.execute("select id, name, picture, fbid from user where id=%s" % userid)
+    entries = [dict(id=str(row[0]), name=str(row[1]), picture=str(row[2]), fbid=str(row[3])) for row in cur.fetchall()]
+    r = make_response( str(entries).replace("\'","\"") )
+    r.mimetype = 'application/json'
+    return r
+
+@app.route("/user/", methods=["POST"])
+def register_user():
+    content_json = request.get_json()
+    st = 'insert into user (name, fbid, picture) values ("%s", "%s", "%s")' % (content_json['name'], content_json['fbid'], content_json["picture"])
+    print st
+    g.db.execute(st)
+    g.db.commit()
+    print content_json
+    return ""
+
+
 @app.route("/fetch_questions/")
 def fetch_questios():
     cur = g.db.execute('select title, correct_choice, time_limit, choices from question order by random() desc limit 9')

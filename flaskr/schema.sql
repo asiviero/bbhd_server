@@ -13,3 +13,11 @@ create table question (
   time_limit int not null,
   choices text not null
 );
+
+drop table if exists user;
+create table user (
+  id integer primary key autoincrement,
+  name text not null,
+  picture text not null,
+  fbid text not null
+);
