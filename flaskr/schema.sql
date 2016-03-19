@@ -21,3 +21,11 @@ create table user (
   picture text not null,
   fbid text not null
 );
+
+drop table if exists quiz;
+create table quiz (
+  id integer primary key autoincrement,
+  users text not null,
+  questions text not null,
+  winner int
+);

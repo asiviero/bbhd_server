@@ -51,7 +51,6 @@ def get_user(userid):
 def register_user():
     content_json = request.get_json()
     st = 'insert into user (name, fbid, picture) values ("%s", "%s", "%s")' % (content_json['name'], content_json['fbid'], content_json["picture"])
-    print st
     g.db.execute(st)
     g.db.commit()
     print content_json
@@ -110,16 +109,40 @@ def query_questions(stat,year):
 @app.route("/get_questions/", methods=['GET'])
 def get_questions():
 
-    years = range(1990,2014)
-    years.remove(2012) # 2012 data is incomplete
+    years = [2014,2015]
     for stat in map_stat_xpath:
         year = random.choice(years)
-        year = 2014
         print("%s: %s" % (stat, year))
         query_questions(stat,year)
         time.sleep(2)
     return ""
     # return str(query_questions("batting_average","2014"))
+
+
+
+@app.route("/generate_quiz/", methods=["POST"])
+def generate_quiz():
+    content_json = request.get_json()
+
+    cur = g.db.execute('select title, correct_choice, time_limit, choices from question order by random() desc limit 9')
+    entries = [dict(title=str(row[0]), correct=str(row[1]), time_limit=str(row[2]), choices=str(row[3])) for row in cur.fetchall()]
+
+    g.db.execute('insert into quiz (users, questions) values (?, ?)',
+                 [content_json["users"], str(entries)])
+    g.db.commit()
+
+    cur = g.db.execute('select id from quiz order by id limit 1')
+    entries_id = [row[0] for row in cur.fetchall()]
+    print entries_id
+    quizid = entries_id[0]
+    print quizid
+    r_str = str({"id":quizid, "users": str(content_json["users"]), "questions": str(entries)}).replace("\'","\"").replace("\"[","[").replace("]\"","]")
+    r = make_response( r_str )
+    r.mimetype = 'application/json'
+    return r
+
+
+
 
 
 
