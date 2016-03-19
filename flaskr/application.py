@@ -118,7 +118,14 @@ def get_questions():
     return ""
     # return str(query_questions("batting_average","2014"))
 
-
+@app.route("/quiz/<quizid>/", methods=["GET"])
+def get_quiz(quizid):
+    cur = g.db.execute('select questions from quiz where id = %s' % int(quizid))
+    entries = [dict(questions=str(row[0])) for row in cur.fetchall()]
+    entries = entries[0]
+    r = make_response( str(entries).replace("\'","\"").replace("\"[","[").replace("]\"","]") )
+    r.mimetype = 'application/json'
+    return r
 
 @app.route("/generate_quiz/", methods=["POST"])
 def generate_quiz():
