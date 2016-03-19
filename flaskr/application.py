@@ -133,15 +133,25 @@ def generate_quiz():
 
     cur = g.db.execute('select id from quiz order by id limit 1')
     entries_id = [row[0] for row in cur.fetchall()]
-    print entries_id
     quizid = entries_id[0]
-    print quizid
     r_str = str({"id":quizid, "users": str(content_json["users"]), "questions": str(entries)}).replace("\'","\"").replace("\"[","[").replace("]\"","]")
     r = make_response( r_str )
     r.mimetype = 'application/json'
     return r
 
+@app.route("/quiz_winner/<quizid>", methods=["PUT"])
+def set_winner(quizid):
+    content_json = request.get_json()
+    g.db.execute('update quiz set winner = ? where id = ?',
+                 [int(content_json["winner"]), int(quizid)])
+    g.db.commit()
 
+    cur = g.db.execute('select winner from quiz where id=%s' % quizid)
+    entries_id = [row[0] for row in cur.fetchall()]
+    winner = entries_id[0]
+    r = make_response( str({"id": str(winner)}).replace("\'","\"") )
+    r.mimetype = 'application/json'
+    return r
 
 
 
